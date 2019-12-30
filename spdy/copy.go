@@ -16,7 +16,7 @@ func (c *channel) copyMessage(message interface{}) (interface{}, error) {
 	if mapOk {
 		return c.copyChannelMessage(mapCopy)
 	}
-	return c.copyStructure(message)
+	return c.copyValue(message)
 }
 
 func (c *channel) copyValue(v interface{}) (interface{}, error) {
@@ -174,14 +174,15 @@ func (c *channel) copyStructure(m interface{}) (interface{}, error) {
 }
 
 func (c *channel) copyStructValue(v reflect.Value) (interface{}, error) {
-	mCopy := make(map[string]interface{})
-	t := v.Type()
+	mCopy := reflect.New(v.Type()).Elem()
 	for i := 0; i < v.NumField(); i++ {
 		vCopy, vErr := c.copyValue(v.Field(i).Interface())
 		if vErr != nil {
 			return nil, vErr
 		}
-		mCopy[t.Field(i).Name] = vCopy
+		if vCopy != nil {
+			mCopy.Field(i).Set(reflect.ValueOf(vCopy))
+		}
 	}
-	return mCopy, nil
+	return mCopy.Interface(), nil
 }
